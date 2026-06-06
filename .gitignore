@@ -1,0 +1,58 @@
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Runtime caches (regenerated on startup) ───────────────────────────────────
+backend/kpis.json
+backend/suggestions.json
+backend/dynamic_dbs.json
+
+# ── Uploaded databases (user data, not source) ────────────────────────────────
+db/uploads/
+
+# ── Chroma vector store ───────────────────────────────────────────────────────
+chroma_data/
+backend/chroma_data/
+
+# ── SQLite dev database ───────────────────────────────────────────────────────
+*.db
+!db/sample_dbs/*.db
+
+# ── Node / frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── pytest cache ─────────────────────────────────────────────────────────────
+.pytest_cache/
+tests/__pycache__/

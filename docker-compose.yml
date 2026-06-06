@@ -1,0 +1,81 @@
+services:
+  # ── PostgreSQL + Northwind seed ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: speakql
+      POSTGRES_PASSWORD: speakql
+      POSTGRES_DB: northwind
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./db/seed:/docker-entrypoint-initdb.d:ro
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U speakql -d northwind']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Chroma vector database ──────────────────────────────────────────────────
+  chroma:
+    image: chromadb/chroma:0.6.2
+    environment:
+      CHROMA_SERVER_HOST: 0.0.0.0
+      CHROMA_SERVER_HTTP_PORT: 8000
+    ports:
+      - '8001:8000'   # expose as 8001 on the host
+    volumes:
+      - chroma_data:/chroma/chroma
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/v1/heartbeat']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── FastAPI backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      DB_PROD_URL: postgresql+asyncpg://speakql:speakql@postgres:5432/northwind
+      DB_CHINOOK_URL: sqlite+aiosqlite:////data/chinook.db
+      DB_FINANCIAL_URL: sqlite+aiosqlite:////data/financial.db
+      DB_SUPERSTORE_URL: sqlite+aiosqlite:////data/superstore.db
+      DB_ALIASES: prod,chinook,financial,superstore
+      CHROMA_MODE: http
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+    ports:
+      - '8080:8000'
+    volumes:
+      - ./backend:/app/backend
+      - ./db/sample_dbs:/data:ro
+      - ./db/uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Vite frontend ───────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: ''   # empty = same-origin; proxied via Vite's proxy config
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  chroma_data:

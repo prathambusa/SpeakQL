@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+import re
+import sqlglot
+from sqlglot import exp
+
+# Secondary regex guard — belt-and-suspenders before AST check
+_WRITE_PATTERN = re.compile(
+    r"\b(DROP|DELETE|UPDATE|INSERT|TRUNCATE|ALTER|CREATE|EXEC|EXECUTE|REPLACE|MERGE|CALL|GRANT|REVOKE)\b",
+    re.IGNORECASE,
+)
+
+
+class SQLValidationError(ValueError):
+    pass
+
+
+def validate_sql(sql: str) -> None:
+    """
+    Raise SQLValidationError if sql is not a safe SELECT statement.
+    Two layers:
+      1. Regex keyword blocklist
+      2. sqlglot AST: top-level statement must be a Select
+    """
+    if _WRITE_PATTERN.search(sql):
+        raise SQLValidationError(
+            "The generated query contained a write keyword and was blocked."
+        )
+
+    try:
+        statements = sqlglot.parse(sql)
+    except sqlglot.errors.ParseError as exc:
+        raise SQLValidationError(f"SQL parse error: {exc}") from exc
+
+    if not statements:
+        raise SQLValidationError("Empty SQL statement.")
+
+    for stmt in statements:
+        if not isinstance(stmt, exp.Select):
+            raise SQLValidationError(
+                f"Only SELECT statements are allowed; got {type(stmt).__name__}."
+            )
+
+
+def inject_limit(sql: str, max_rows: int = 1000) -> str:
+    """Add LIMIT max_rows if the query has no LIMIT clause."""
+    try:
+        tree = sqlglot.parse_one(sql)
+        if tree.find(exp.Limit) is None:
+            tree = tree.limit(max_rows)
+        return tree.sql(pretty=False)
+    except Exception:
+        # Fallback: append LIMIT textually
+        stripped = sql.rstrip().rstrip(";")
+        return f"{stripped} LIMIT {max_rows}"
+
+
+def format_sql(sql: str, dialect: str | None = None) -> str:
+    """Pretty-print SQL using sqlglot."""
+    try:
+        return sqlglot.transpile(sql, read=dialect or "sqlite", pretty=True)[0]
+    except Exception:
+        return sql
+
+
+def detect_dialect(db_url: str) -> str:
+    if "postgresql" in db_url or "postgres" in db_url:
+        return "postgres"
+    if "mysql" in db_url or "mariadb" in db_url:
+        return "mysql"
+    return "sqlite"
