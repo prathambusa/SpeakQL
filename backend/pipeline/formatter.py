@@ -44,6 +44,20 @@ def validate_sql(sql: str) -> None:
             )
 
 
+# Matches GROUP_CONCAT(DISTINCT col, 'sep') — invalid in SQLite
+_GROUP_CONCAT_DISTINCT = re.compile(
+    r"GROUP_CONCAT\(\s*DISTINCT\s+([^,)]+?)\s*,\s*(?:'[^']*'|\"[^\"]*\")\s*\)",
+    re.IGNORECASE,
+)
+
+
+def fix_sqlite_quirks(sql: str) -> str:
+    """Rewrite common SQLite-incompatible patterns produced by the LLM."""
+    # GROUP_CONCAT(DISTINCT col, sep) → GROUP_CONCAT(DISTINCT col)
+    sql = _GROUP_CONCAT_DISTINCT.sub(r"GROUP_CONCAT(DISTINCT \1)", sql)
+    return sql
+
+
 def inject_limit(sql: str, max_rows: int = 1000) -> str:
     """Add LIMIT max_rows if the query has no LIMIT clause."""
     try:

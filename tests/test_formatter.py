@@ -2,6 +2,7 @@
 import pytest
 from backend.pipeline.formatter import (
     SQLValidationError,
+    fix_sqlite_quirks,
     inject_limit,
     validate_sql,
 )
@@ -81,6 +82,25 @@ def test_valid_cte_with_join():
 def test_empty_sql_raises():
     with pytest.raises(SQLValidationError):
         validate_sql("")
+
+
+# ── SQLite quirk fixes ────────────────────────────────────────────────────────
+
+def test_fix_group_concat_distinct_with_separator():
+    sql = "SELECT GROUP_CONCAT(DISTINCT Winning_Captain, ',') FROM t"
+    assert "GROUP_CONCAT(DISTINCT Winning_Captain)" in fix_sqlite_quirks(sql)
+
+def test_fix_group_concat_distinct_multi_char_sep():
+    sql = "SELECT GROUP_CONCAT(DISTINCT name, ', ') FROM t"
+    assert fix_sqlite_quirks(sql) == "SELECT GROUP_CONCAT(DISTINCT name) FROM t"
+
+def test_fix_group_concat_no_distinct_unchanged():
+    sql = "SELECT GROUP_CONCAT(col, ',') FROM t"
+    assert fix_sqlite_quirks(sql) == sql
+
+def test_fix_group_concat_distinct_no_sep_unchanged():
+    sql = "SELECT GROUP_CONCAT(DISTINCT col) FROM t"
+    assert fix_sqlite_quirks(sql) == sql
 
 
 # ── Row-cap injection ─────────────────────────────────────────────────────────

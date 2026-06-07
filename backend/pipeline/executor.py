@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from backend.config import settings
-from backend.pipeline.formatter import SQLValidationError, inject_limit, validate_sql
+from backend.pipeline.formatter import SQLValidationError, fix_sqlite_quirks, inject_limit, validate_sql
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,7 @@ async def execute_query(
     m_rows = max_rows or settings.max_rows
 
     validate_sql(sql)
+    sql = fix_sqlite_quirks(sql)
     capped_sql = inject_limit(sql, m_rows)
 
     start = time.perf_counter()
