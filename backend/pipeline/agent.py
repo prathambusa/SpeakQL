@@ -31,6 +31,11 @@ TRUNCATE, ALTER, CREATE, EXEC, EXECUTE, or any DDL/DML.
 - If you are unsure or the question cannot be answered from the available tables, \
 respond ONLY with a JSON clarification (see Response Format below).
 - Do not add SQL fences (```), backticks, or explanatory text after the SQL.
+- SQLite quirks you MUST follow:
+  * GROUP_CONCAT with DISTINCT takes exactly one argument: GROUP_CONCAT(DISTINCT col). \
+Never write GROUP_CONCAT(DISTINCT col, separator) — SQLite does not support it.
+  * Use || for string concatenation, not CONCAT().
+  * Use strftime() for date formatting, not DATE_FORMAT().
 
 ## Response Format
 Step 1 — think step-by-step inside <thinking>…</thinking> tags.
