@@ -6,7 +6,6 @@ from pathlib import Path
 
 from fastapi import Body, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -436,10 +435,3 @@ async def upload_database(file: UploadFile, alias: str = Form(...)) -> ConnectRe
         tables_indexed=len(tables),
         message=f"Uploaded '{alias}' — {len(tables)} tables indexed.",
     )
-
-
-# Serve the built React frontend — only present inside the Docker image.
-# API routes above take priority; this catches everything else (SPA routing).
-_frontend = Path(__file__).parent.parent / "frontend" / "dist"
-if _frontend.exists():
-    app.mount("/", StaticFiles(directory=str(_frontend), html=True), name="frontend")
