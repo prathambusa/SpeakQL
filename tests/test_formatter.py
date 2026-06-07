@@ -48,6 +48,34 @@ def test_blocked_write_statements(bad_sql):
         validate_sql(bad_sql)
 
 
+# ── CTE (WITH … SELECT …) ─────────────────────────────────────────────────────
+
+def test_valid_cte():
+    validate_sql("""
+        WITH top_products AS (
+            SELECT product_id, product_name, unit_price
+            FROM products
+            ORDER BY unit_price DESC
+            LIMIT 3
+        )
+        SELECT * FROM top_products
+    """)
+
+
+def test_valid_cte_with_join():
+    validate_sql("""
+        WITH ranked AS (
+            SELECT customer, SUM(total) AS total_spend
+            FROM orders
+            GROUP BY customer
+        )
+        SELECT r.customer, r.total_spend, o.order_date
+        FROM ranked r
+        JOIN orders o ON r.customer = o.customer
+        ORDER BY r.total_spend DESC
+    """)
+
+
 # ── Non-SELECT AST ─────────────────────────────────────────────────────────────
 
 def test_empty_sql_raises():

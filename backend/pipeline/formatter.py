@@ -36,9 +36,11 @@ def validate_sql(sql: str) -> None:
         raise SQLValidationError("Empty SQL statement.")
 
     for stmt in statements:
-        if not isinstance(stmt, exp.Select):
+        # CTEs (WITH … SELECT …) parse as exp.With whose .this is the SELECT
+        inner = stmt.this if isinstance(stmt, exp.With) else stmt
+        if not isinstance(inner, exp.Select):
             raise SQLValidationError(
-                f"Only SELECT statements are allowed; got {type(stmt).__name__}."
+                f"Only SELECT statements are allowed; got {type(inner).__name__}."
             )
 
 
