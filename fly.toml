@@ -1,8 +1,4 @@
-# Change "speakql-backend" to a globally unique name, then run:
-#   fly launch --no-deploy   (first time — links repo to Fly app)
-#   fly secrets set ANTHROPIC_API_KEY=sk-ant-...
-#   fly deploy
-app = "speakql-backend"
+app = "speakql-prathambusa"
 primary_region = "iad"
 
 [build]
