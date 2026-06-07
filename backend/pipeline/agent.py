@@ -82,8 +82,11 @@ def _parse_output(raw: str) -> AgentResult:
     raw_remainder = re.sub(r"```(?:sql)?", "", raw_remainder, flags=re.IGNORECASE).strip()
     raw_remainder = raw_remainder.strip("`").strip()
 
-    # Expect a SELECT statement
-    select_match = re.search(r"(SELECT\b.*)", raw_remainder, re.DOTALL | re.IGNORECASE)
+    # Match CTEs (WITH <name> AS ...) or plain SELECT queries
+    select_match = re.search(
+        r"(WITH\s+\w+\s+AS\s*\(.*|SELECT\b.*)",
+        raw_remainder, re.DOTALL | re.IGNORECASE,
+    )
     if select_match:
         sql = select_match.group(1).strip()
         return AgentResult(sql=sql, reasoning_trace=reasoning, clarify=False, clarify_message=None)
